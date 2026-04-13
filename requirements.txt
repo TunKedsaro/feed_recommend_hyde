@@ -1,0 +1,34 @@
+# --- Jupyterlab (develop) ---
+jupyterlab
+ipykernel
+pytest
+
+# --- Web serving (Cloud Run) ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+gunicorn==22.0.0
+pydantic==2.8.2
+
+# --- Core runtime ---
+PyYAML==6.0.2
+numpy==1.26.4
+pandas==2.2.2
+python-dateutil==2.9.0.post0
+joblib==1.4.2
+scikit-learn==1.5.2
+
+# --- Vector search (FAISS) ---
+# faiss-cpu==1.8.0.post1
+
+# --- LLM client (offline/refresh pipeline; safe to include even if serving doesn't use it) ---
+google-genai>=0.6.0
+
+# --- BigQuery ---
+google-cloud-bigquery
+db-dtypes
+
+# --- CloudStorage ---
+google-cloud-storage
+google-cloud-bigquery-storage
+
+openpyxl

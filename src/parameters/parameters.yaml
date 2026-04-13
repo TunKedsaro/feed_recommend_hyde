@@ -1,0 +1,43 @@
+app:
+  name: poc_hyde_feed_recommendation
+  timezone: UTC
+
+llm:
+  # model_name: gemini-2.5-flash
+  # model_name: gemini-3-flash-preview
+  model_name: gemini-3.1-flash-lite-preview
+  embedding_model : gemini-embedding-001
+  # embedding_model : gemini-embedding-2-preview
+  max_output_tokens: 2048
+  temperature: 0.2
+  slow_time: 30
+  output_dim: 768
+
+hyde:
+  history_threshold: 5
+  recent_k: 5
+  feed_text_max_chars: 240
+  retry_limit: 2
+  prompt_version: v2
+
+bigquery:
+  project: poc-piloturl-nonprod
+  dataset: gold_layer
+
+  # tables:
+  #   students: students_10k
+  #   interactions: interactions_320k
+  #   feeds: feeds_20k
+  # bucket: hyde-datalake-test
+
+  tables:
+    students: students_1k
+    interactions: interactions_180k
+    feeds: feeds_20k
+  bucket: hyde-datalake-feeds
+    
+  # tables:
+  #   students: students
+  #   interactions: interactions
+  #   feeds: feeds
+  # bucket: hyde-datalake-test

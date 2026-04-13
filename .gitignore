@@ -1,0 +1,16 @@
+sandbox/.ipynb_checkpoints/
+.ipynb_checkpoints/
+docs/secret_command.txt
+__pycache__/
+*.pyc
+secrets/
+src/parameters/credentials.yaml
+.Trash-0/
+.pytest_cache
+
+logs/
+sandbox/
+*.xlsx
+__pycache__/
+src/artifacts/
+secrets/
