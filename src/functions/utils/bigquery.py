@@ -39,7 +39,6 @@ class DataQuery:
     #     return job.to_dataframe()
     def get_students(self, student_id: Optional[str] = None):
         table_id = f"{self.project}.{self.dataset}.{self.tables['students']}"
-        print(student_id,table_id)
         if student_id is None:
             query = f"""
             SELECT *
@@ -93,7 +92,6 @@ class DataQuery:
 
     def get_interactions(self, student_id: Optional[str] = None):
         table_id = f"{self.project}.{self.dataset}.{self.tables['interactions']}"
-        print(student_id)
         if student_id is None:
             query = f"""
             SELECT *

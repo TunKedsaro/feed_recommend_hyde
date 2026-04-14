@@ -21,12 +21,12 @@ logging.getLogger("src.functions.utils.llm_client").setLevel(logging.ERROR)
 logging.getLogger("google").setLevel(logging.WARNING)
 
 app = FastAPI(
-    title="Hyde Feed and Cource recommentdation",
-    version="1.0.0",
+    title="Feed recommentdation HyDE",
+    version="1.1.0",
     description=(
         "Feed recommendation HyDE part"
         "<br>"
-        f"Last time Update : 2026-04-13 22:49"
+        f"Last time Update : 2026-04-14 10:44"
         "<br>"
         "Repo : https://github.com/TunKedsaro/feed_recommend_hyde"
     ),
@@ -49,7 +49,7 @@ config_path = Path(__file__).resolve().parent / "parameters" / "parameters.yaml"
 with open(config_path, "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
-bucket_name = config["bigquery"]["bucket"]
+bucket_name = config["cloudstorage"]["bucket"]
 
 ### ---------- Health & Metadata ---------- ###
 ### ----------     API:0.0       ---------- ###

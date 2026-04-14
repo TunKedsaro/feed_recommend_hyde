@@ -4,10 +4,8 @@ app:
 
 llm:
   # model_name: gemini-2.5-flash
-  # model_name: gemini-3-flash-preview
   model_name: gemini-3.1-flash-lite-preview
   embedding_model : gemini-embedding-001
-  # embedding_model : gemini-embedding-2-preview
   max_output_tokens: 2048
   temperature: 0.2
   slow_time: 30
@@ -27,14 +25,6 @@ bigquery:
     students: silver_students
     interactions: silver_user_community_relation
     feeds: silver_feed_community
+
+cloudstorage:
   bucket: hyde-datalake-feed-recommend
-
-  # project: poc-piloturl-nonprod
-  # dataset: gold_layer
-  # tables:
-  #   students: students
-  #   interactions: interactions
-  #   feeds: feeds
-  # bucket: hyde-datalake-test
-
-    
