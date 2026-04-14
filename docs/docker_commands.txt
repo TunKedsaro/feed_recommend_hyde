@@ -1,0 +1,37 @@
+###########################################################################################################################
+# Docker command
+// Docker for FastAPI
+docker build -f Dockerfile.dev -t hyde-fastapi .
+
+// windown
+docker run -it --name hyde-fastapi-dev ^
+  -p 4000:4000 ^
+  -v "%cd%:/code" ^
+  -v "%cd%/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro" ^
+  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json ^
+  -e GOOGLE_API_KEY=AIzaSyD5sdsDHVULl6_m3yN5qF79bviTb1zUIAA ^
+  hyde-fastapi bash
+
+// mac
+docker run -it --name hyde-fastapi-dev \
+  -p 4000:4000 \
+  -v $(pwd):/code \
+  -v $(pwd)/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json \
+  -e GOOGLE_API_KEY=AIzaSyD5sdsDHVULl6_m3yN5qF79bviTb1zUIAA \
+  hyde-fastapi bash
+
+
+uvicorn src.main:app --host 0.0.0.0 --port 4000 --reload
+
+// Docker for Jupyterlab
+docker build -f Dockerfile2.dev -t hyde-jupyter .
+docker run -it --name hyde-jupyter-dev -p 8888:8888 -v "%cd%:/code" -v "%cd%/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json -e GOOGLE_API_KEY=AIzaSyD5sdsDHVULl6_m3yN5qF79bviTb1zUIAA hyde-jupyter bash
+jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+
+// Check GOOGLE_API_KEY & GOOGLE_APPLICATION_CREDENTIALS
+>>> import os
+>>> print(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+/secrets/sa.json
+>>> print(os.getenv("GOOGLE_API_KEY"))
+AIz...IAA

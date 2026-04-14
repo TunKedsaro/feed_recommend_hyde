@@ -1,0 +1,35 @@
+###########################################################################################################################
+# GIT 
+git reset --hard <branch_id>       # reset back to that version branch
+git restore .                      # git reset file and folder
+
+git checkout -b <branch>
+
+git branch -d dev
+git push origin --delete dev
+
+
+# save logging work
+git checkout feature/logging
+git add .
+git commit -m "wip(logging): save progress"
+
+# docs task
+git checkout dev
+git checkout -b feature/docs
+git push -u origin feature/docs
+# do docs
+git commit -m "docs: update API documentation"
+git push
+
+# merge docs
+git checkout dev
+git merge feature/docs
+git push origin dev
+
+# remove branch
+git branch -d <branch>
+git push origin -d <branch>
+
+# resume logging
+git checkout feature/logging
