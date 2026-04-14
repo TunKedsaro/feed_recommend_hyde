@@ -9,7 +9,7 @@ docker run -it --name hyde-fastapi-dev ^
   -v "%cd%:/code" ^
   -v "%cd%/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro" ^
   -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json ^
-  -e GOOGLE_API_KEY=AIzaSyD5sdsDHVULl6_m3yN5qF79bviTb1zUIAA ^
+  -e GOOGLE_API_KEY=AIzaSyDbjWa...WpFXKqQHDrMB4I ^
   hyde-fastapi bash
 
 // mac
@@ -18,7 +18,7 @@ docker run -it --name hyde-fastapi-dev \
   -v $(pwd):/code \
   -v $(pwd)/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro \
   -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json \
-  -e GOOGLE_API_KEY=AIzaSyD5sdsDHVULl6_m3yN5qF79bviTb1zUIAA \
+  -e GOOGLE_API_KEY=AIzaSyDbj...FXKqQHDrMB4I \
   hyde-fastapi bash
 
 
@@ -35,3 +35,5 @@ jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 /secrets/sa.json
 >>> print(os.getenv("GOOGLE_API_KEY"))
 AIz...IAA
+
+

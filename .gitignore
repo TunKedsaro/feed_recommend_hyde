@@ -1,6 +1,7 @@
 sandbox/.ipynb_checkpoints/
 .ipynb_checkpoints/
 docs/secret_command.txt
+
 __pycache__/
 *.pyc
 secrets/
