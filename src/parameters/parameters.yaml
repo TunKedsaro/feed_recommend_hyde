@@ -22,22 +22,19 @@ hyde:
 
 bigquery:
   project: poc-piloturl-nonprod
-  dataset: gold_layer
-
-  # tables:
-  #   students: students_10k
-  #   interactions: interactions_320k
-  #   feeds: feeds_20k
-  # bucket: hyde-datalake-test
-
+  dataset: mock_feed_recommendation
   tables:
-    students: students_1k
-    interactions: interactions_180k
-    feeds: feeds_20k
-  bucket: hyde-datalake-feeds
-    
+    students: silver_students
+    interactions: silver_user_community_relation
+    feeds: silver_feed_community
+  bucket: hyde-datalake-feed-recommend
+
+  # project: poc-piloturl-nonprod
+  # dataset: gold_layer
   # tables:
   #   students: students
   #   interactions: interactions
   #   feeds: feeds
   # bucket: hyde-datalake-test
+
+    

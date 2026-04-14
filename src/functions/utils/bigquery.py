@@ -2,7 +2,7 @@ from google.cloud import bigquery
 from typing import Any, Dict, List, Optional, Tuple
 import yaml
 from pathlib import Path
-
+import pandas as pd
 class DataQuery:
     def __init__(self, config_path: Path | None = None):
         self.client = bigquery.Client()
@@ -38,9 +38,8 @@ class DataQuery:
     #         job = self.client.query(query, job_config=job_config)
     #     return job.to_dataframe()
     def get_students(self, student_id: Optional[str] = None):
-
         table_id = f"{self.project}.{self.dataset}.{self.tables['students']}"
-
+        print(student_id,table_id)
         if student_id is None:
             query = f"""
             SELECT *
@@ -51,20 +50,21 @@ class DataQuery:
             query = f"""
             SELECT *
             FROM `{table_id}`
-            WHERE student_id = @student_id
+            WHERE user_id = @student_id
             """
             job_config = bigquery.QueryJobConfig(
                 query_parameters=[
                     bigquery.ScalarQueryParameter(
-                        "student_id",
+                        "user_id",
                         "STRING",
                         student_id
                     )
                 ]
             )
             job = self.client.query(query, job_config=job_config)
-
-        return job.to_dataframe()
+        df = job.to_dataframe()
+        df = df.rename(columns={"user_id": "student_id"})
+        return df
     
     # def get_interactions(self,student_id:Optional[str]=None):
     #     if student_id is None:
@@ -92,9 +92,8 @@ class DataQuery:
     #     return job.to_dataframe() 
 
     def get_interactions(self, student_id: Optional[str] = None):
-
         table_id = f"{self.project}.{self.dataset}.{self.tables['interactions']}"
-
+        print(student_id)
         if student_id is None:
             query = f"""
             SELECT *
@@ -117,7 +116,6 @@ class DataQuery:
                 ]
             )
             job = self.client.query(query, job_config=job_config)
-
         return job.to_dataframe()
     
     # def get_user_events_json(self):
@@ -146,35 +144,33 @@ class DataQuery:
     #         }
     #     return feeds_lookup
     def get_user_events_json(self):
-
         table_id = f"{self.project}.{self.dataset}.{self.tables['feeds']}"
-
         query = f"""
         SELECT *
         FROM `{table_id}`
         """
-
         df = self.client.query(query).to_dataframe()
-
-        df["created_at"] = df["created_at"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
+        df["post_created_at"] = pd.to_datetime(df["post_created_at"], utc=True, errors="coerce")
+        df["created_at"] = df["post_created_at"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
         feeds_lookup = {}
-
         for _, row in df.iterrows():
-            feed_id = row["feed_id"]
+            feed_id = row["post_id"]
             feeds_lookup[feed_id] = {
-                "feed_id": feed_id,
-                "title": row["title"],
-                "feed_text": row["feed_text"],
-                "tags": row["tags"],
-                "language": row["language"],
-                "created_at": row["created_at"],
-                "source": row["source"],
-                "url": row["url"],
-                "views": int(row["views"]),
-                "embedding_input": row["embedding_input"],
+                "post_id": feed_id,
+                "post_status": row["post_status"],
+                "is_valid": row["is_valid"],
+                "created_at": row["post_created_at"],
+                "title": row["post_topic"],
+                "feed_text": row["post_content_body"],
+                "tags": row["post_tags"],
+                "post_target_group":row["post_target_group"],
+                "post_category":row["post_category"],
+                "views": int(row["num_click"]),
+                "views": int(row["num_like"]),
+                "views": int(row["num_comment"]),
+                "views": int(row["num_share"]),
+                "views": int(row["num_bookmark"]),
             }
-
         return feeds_lookup
     
     ### ---------- Upload data ---------- ###

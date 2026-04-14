@@ -22,13 +22,13 @@ logging.getLogger("google").setLevel(logging.WARNING)
 
 app = FastAPI(
     title="Hyde Feed and Cource recommentdation",
-    version="1.5.0",
+    version="1.0.0",
     description=(
-        "Hyde Feed and Cource recommentdation (Ready to review)"
+        "Feed recommendation HyDE part"
         "<br>"
-        f"Last time Update : 2026-03-23 12:32"
+        f"Last time Update : 2026-04-13 22:49"
         "<br>"
-        "Repo : https://github.com/TunKedsaro/Hyde"
+        "Repo : https://github.com/TunKedsaro/feed_recommend_hyde"
     ),
     contact={
         "name": "Tun Kedsaro",
