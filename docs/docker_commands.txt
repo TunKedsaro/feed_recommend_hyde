@@ -26,7 +26,7 @@ uvicorn src.main:app --host 0.0.0.0 --port 4000 --reload
 
 // Docker for Jupyterlab
 docker build -f Dockerfile2.dev -t hyde-jupyter .
-docker run -it --name hyde-jupyter-dev -p 8888:8888 -v "%cd%:/code" -v "%cd%/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json -e GOOGLE_API_KEY=AIzaSyD5sdsDHVULl6_m3yN5qF79bviTb1zUIAA hyde-jupyter bash
+docker run -it --name hyde-jupyter-dev -p 8888:8888 -v "%cd%:/code" -v "%cd%/secrets/poc-piloturl-nonprod-0bdd312b6dbb.json:/secrets/sa.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json -e GOOGLE_API_KEY=AIzaSy...qF79bviTb1zUIAA hyde-jupyter bash
 jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 
 // Check GOOGLE_API_KEY & GOOGLE_APPLICATION_CREDENTIALS

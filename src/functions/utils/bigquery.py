@@ -13,85 +13,10 @@ class DataQuery:
         self.dataset = self.config["bigquery"]["dataset"]
         self.tables  = self.config["bigquery"]["tables"]
 
-    # def get_students(self, student_id:Optional[str]=None):
-    #     if student_id is None:
-    #         query = """
-    #         SELECT *
-    #         FROM `poc-piloturl-nonprod.gold_layer.students`
-    #         """
-    #         job = self.client.query(query)
-    #     else:
-    #         query = """
-    #         SELECT *
-    #         FROM `poc-piloturl-nonprod.gold_layer.students`
-    #         WHERE student_id = @student_id
-    #         """
-    #         job_config = bigquery.QueryJobConfig(
-    #             query_parameters=[
-    #                 bigquery.ScalarQueryParameter(
-    #                     "student_id",
-    #                     "STRING",
-    #                     student_id
-    #                 )
-    #             ]
-    #         )
-    #         job = self.client.query(query, job_config=job_config)
-    #     return job.to_dataframe()
     def get_students(self, student_id: Optional[str] = None):
+        print(f"Position : bigquery.py/class DataQuery/def get_students")
+        print(f"- student_id : {student_id}")
         table_id = f"{self.project}.{self.dataset}.{self.tables['students']}"
-        if student_id is None:
-            query = f"""
-            SELECT *
-            FROM `{table_id}`
-            """
-            job = self.client.query(query)
-        else:
-            query = f"""
-            SELECT *
-            FROM `{table_id}`
-            WHERE user_id = @student_id
-            """
-            job_config = bigquery.QueryJobConfig(
-                query_parameters=[
-                    bigquery.ScalarQueryParameter(
-                        "user_id",
-                        "STRING",
-                        student_id
-                    )
-                ]
-            )
-            job = self.client.query(query, job_config=job_config)
-        df = job.to_dataframe()
-        df = df.rename(columns={"user_id": "student_id"})
-        return df
-    
-    # def get_interactions(self,student_id:Optional[str]=None):
-    #     if student_id is None:
-    #         query = """
-    #         SELECT *
-    #         FROM `poc-piloturl-nonprod.gold_layer.interactions`
-    #         """
-    #         job = self.client.query(query)
-    #     else:
-    #         query = """
-    #         SELECT *
-    #         FROM `poc-piloturl-nonprod.gold_layer.interactions`
-    #         WHERE user_id = @student_id
-    #         """     
-    #         job_config = bigquery.QueryJobConfig(
-    #             query_parameters=[
-    #                 bigquery.ScalarQueryParameter(
-    #                     "student_id",
-    #                     "STRING",
-    #                     student_id
-    #                 )
-    #             ]
-    #         )
-    #         job = self.client.query(query, job_config=job_config)
-    #     return job.to_dataframe() 
-
-    def get_interactions(self, student_id: Optional[str] = None):
-        table_id = f"{self.project}.{self.dataset}.{self.tables['interactions']}"
         if student_id is None:
             query = f"""
             SELECT *
@@ -114,42 +39,146 @@ class DataQuery:
                 ]
             )
             job = self.client.query(query, job_config=job_config)
-        return job.to_dataframe()
-    
-    # def get_user_events_json(self):
-    #     query = """
-    #     SELECT *
-    #     FROM `poc-piloturl-nonprod.gold_layer.feeds`
-    #     """
-    #     df = self.client.query(query).to_dataframe()
-    #     # ensure created_at is ISO-8601 Z format
-    #     df["created_at"] = df["created_at"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        df = job.to_dataframe()
+        print(f"student df ->\n{df}")
+        df = df.rename(columns={"user_id": "student_id"})
+        return df
 
-    #     feeds_lookup: Dict[str, Dict[str, Any]] = {}
-    #     for _,row in df.iterrows():
-    #         feed_id = row["feed_id"]
-    #         feeds_lookup[feed_id] = {
-    #             "feed_id"        : feed_id,
-    #             "title"          : row["title"],
-    #             "feed_text"      : row["feed_text"],
-    #             "tags"           : row["tags"],                     
-    #             "language"       : row["language"],
-    #             "created_at"     : row["created_at"],
-    #             "source"         : row["source"],
-    #             "url"            : row["url"],
-    #             "views"          : int(row["views"]),
-    #             "embedding_input": row["embedding_input"]
-    #         }
-    #     return feeds_lookup
-    def get_user_events_json(self):
-        table_id = f"{self.project}.{self.dataset}.{self.tables['feeds']}"
+    # def get_students(self, student_id: Optional[str] = None):
+    #     print(f"Position : bigquery.py/class DataQuery/def get_students")
+    #     print(f"- student_id : {student_id}")
+    #     table_id = f"{self.project}.{self.dataset}.{self.tables['students']}"
+
+    #     query = f"""
+    #     SELECT *
+    #     FROM `{table_id}`
+    #     WHERE user_id = @student_id
+    #     """
+    #     job_config = bigquery.QueryJobConfig(
+    #         query_parameters=[
+    #             bigquery.ScalarQueryParameter(
+    #                 "student_id",
+    #                 "STRING",
+    #                 student_id
+    #             )
+    #         ]
+    #     )
+
+    #     job = self.client.query(query, job_config=job_config)
+    #     df = job.to_dataframe()
+    #     df = df.rename(columns={"user_id": "student_id"})
+    #     return df
+    
+    # def get_interactions(self, student_id: Optional[str] = None):
+    #     table_id = f"{self.project}.{self.dataset}.{self.tables['interactions']}"
+    #     if student_id is None:
+    #         query = f"""
+    #         SELECT *
+    #         FROM `{table_id}`
+    #         """
+    #         job = self.client.query(query)
+    #     else:
+    #         query = f"""
+    #         SELECT *
+    #         FROM `{table_id}`
+    #         WHERE user_id = @student_id
+    #         """
+    #         job_config = bigquery.QueryJobConfig(
+    #             query_parameters=[
+    #                 bigquery.ScalarQueryParameter(
+    #                     "student_id",
+    #                     "STRING",
+    #                     student_id
+    #                 )
+    #             ]
+    #         )
+    #         job = self.client.query(query, job_config=job_config)
+    #     df= job.to_dataframe()
+    #     print(f"df ->\n{df[df["user_id"]=="stu_p4198"]}")
+    #     return df 
+    
+    def get_interactions(self, student_id: Optional[str] = None):
+        print(f"Position : hydegenerator.py/class DataQuery/def get_interactions")
+        table_id = f"{self.project}.{self.dataset}.{self.tables['interactions']}"
         query = f"""
         SELECT *
         FROM `{table_id}`
+        WHERE user_id = @student_id
         """
-        df = self.client.query(query).to_dataframe()
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter(
+                    "student_id",
+                    "STRING",
+                    student_id
+                )
+            ]
+        )
+        job = self.client.query(query, job_config=job_config)
+        df  = job.to_dataframe()
+        # print(f"df : \n{df}")
+        return df
+    
+    # def get_user_events_json(self):
+    #     print(f"Position : bigquery.py/class DataQuery/def get_user_events_json")
+    #     table_id = f"{self.project}.{self.dataset}.{self.tables['feeds']}"
+    #     query = f"""
+    #     SELECT *
+    #     FROM `{table_id}`
+    #     """
+    #     df = self.client.query(query).to_dataframe()
+    #     print(f"df -> \n{df}")
+    #     df["post_created_at"] = pd.to_datetime(df["post_created_at"], utc=True, errors="coerce")
+    #     df["created_at"] = df["post_created_at"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    #     feeds_lookup = {}
+    #     for _, row in df.iterrows():
+    #         feed_id = row["post_id"]
+    #         feeds_lookup[feed_id] = {
+    #             "post_id": feed_id,
+    #             "post_status": row["post_status"],
+    #             "is_valid": row["is_valid"],
+    #             "created_at": row["post_created_at"],
+    #             "title": row["post_topic"],
+    #             "feed_text": row["post_content_body"],
+    #             "tags": row["post_tags"],
+    #             "post_target_group":row["post_target_group"],
+    #             "post_category":row["post_category"],
+    #             "views": int(row["num_click"]),
+    #             "like": int(row["num_like"]),
+    #             "comment": int(row["num_comment"]),
+    #             "share": int(row["num_share"]),
+    #             "bookmark": int(row["num_bookmark"]),
+    #         }
+    #     return feeds_lookup
+    def get_user_events_json(self, feed_ids: Optional[List[str]] = None):
+        print("Position : bigquery.py/class DataQuery/def get_user_events_json")
+        print(f"- feed_ids : {feed_ids}")
+        table_id = f"{self.project}.{self.dataset}.{self.tables['feeds']}"
+        if feed_ids is None or len(feed_ids) == 0:
+            query = f"""
+            SELECT *
+            FROM `{table_id}`
+            """
+            job = self.client.query(query)
+        else:
+            query = f"""
+            SELECT *
+            FROM `{table_id}`
+            WHERE post_id IN UNNEST(@feed_ids)
+            """
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ArrayQueryParameter("feed_ids", "STRING", feed_ids)
+                ]
+            )
+            job = self.client.query(query, job_config=job_config)
+
+        df = job.to_dataframe()
+        # print(f"df -> \n{df}")
+
         df["post_created_at"] = pd.to_datetime(df["post_created_at"], utc=True, errors="coerce")
         df["created_at"] = df["post_created_at"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
         feeds_lookup = {}
         for _, row in df.iterrows():
             feed_id = row["post_id"]
@@ -163,12 +192,13 @@ class DataQuery:
                 "tags": row["post_tags"],
                 "post_target_group":row["post_target_group"],
                 "post_category":row["post_category"],
-                "views": int(row["num_click"]),
-                "views": int(row["num_like"]),
-                "views": int(row["num_comment"]),
-                "views": int(row["num_share"]),
-                "views": int(row["num_bookmark"]),
+                "views": int(row["num_click"] or 0),
+                "like": int(row["num_like"] or 0),
+                "comment": int(row["num_comment"] or 0),
+                "share": int(row["num_share"] or 0),
+                "bookmark": int(row["num_bookmark"] or 0),
             }
+
         return feeds_lookup
     
     ### ---------- Upload data ---------- ###

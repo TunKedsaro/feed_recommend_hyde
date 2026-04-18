@@ -104,6 +104,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         with prompts_path.open("r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         return data.get("hyde_prompts", {}) or {}
+    
     def _choose_hyde_prompt_key(self,num_events: int, history_threshold: int = 5) -> str:
         """
         Select HyDE prompt variant based on interaction volume.
@@ -119,6 +120,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         if num_events <= 1:
             return "hyde_c"
         return "hyde_a"
+    
     def _render_prompt(
         self,
         template: str,
@@ -287,6 +289,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         failed_students = []
         slow_students   = []
         t0_total        = time.perf_counter()
+        print(f"Position : hydegenerator.py/class HydeGenerator/def single_hyde_generator2") if self.verbose else None
         try:
             # --------------------------------------------------
             # 1. Download data
@@ -294,11 +297,13 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             print("01 Download data ...") if self.verbose else None
             t0 = time.perf_counter()
             if students is None:
-                students     = self.dq.get_students()
+                students     = self.dq.get_students(student_id)
             if interactions is None:
-                interactions = self.dq.get_interactions()
+                interactions = self.dq.get_interactions(student_id)
+            feed_ids = interactions["post_id"].dropna().unique().tolist()
             if feeds_lookup is None:
-                feeds_lookup = self.dq.get_user_events_json()
+                feeds_lookup = self.dq.get_user_events_json(feed_ids)
+            # print(f"feeds_lookup -> {feeds_lookup}")
             download_ms  = (time.perf_counter()-t0)*1000
             print(f"Download time: {(download_ms/1000):.2f}s") if self.verbose else None
             # --------------------------------------------------
@@ -491,6 +496,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         }
 
     def sequential_of_single_student_generator(self):
+        """load all data from bigQuery once time then use it for every students"""
         t0_total  = time.perf_counter()
         report_each_student = []
         failed              = []
