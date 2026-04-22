@@ -43,6 +43,43 @@ class DataQuery:
         print(f"student df ->\n{df}")
         df = df.rename(columns={"user_id": "student_id"})
         return df
+    
+    def get_l20_interaction(self,student_id):
+        print(f"Position : bigquery.py/class DataQuery/def get_l20_interaction")
+        table_id = f"{self.project}.{self.dataset}.{self.tables['l20_interaction']}"
+        print(f"table_id : {table_id}")
+        if student_id is None:
+            query = f"""
+            SELECT *
+            FROM `{table_id}`
+            """
+            job = self.client.query(query)
+        else:
+            query = f"""
+            SELECT *
+            FROM `{table_id}`
+            WHERE user_id = @student_id
+            """
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter(
+                        "student_id",
+                        "STRING",
+                        student_id
+                    )
+                ]
+            )
+            job = self.client.query(query, job_config=job_config)
+        df = job.to_dataframe()
+        df = df.rename(columns={"user_id": "student_id"})
+        return df
+
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.max_columns', None)
+        # pd.set_option('display.max_colwidth', None)
+        # pd.set_option('display.width', None)
+        # print(f"l20_interaction df ->\n{df}")
+
 
     # def get_students(self, student_id: Optional[str] = None):
     #     print(f"Position : bigquery.py/class DataQuery/def get_students")

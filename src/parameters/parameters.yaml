@@ -25,6 +25,7 @@ bigquery:
     students: silver_students
     interactions: silver_user_community_relation
     feeds: silver_feed_community
+    l20_interaction: gold_agg_l20_user_interaction
 
 cloudstorage:
   bucket: hyde-datalake-feed-recommend

@@ -282,6 +282,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
     def single_hyde_generator2(self, 
                                 student_id:str,
                                 students = None,
+                                l20_interaction = None,
                                 interactions = None,
                                 feeds_lookup = None
                             ):
@@ -298,12 +299,14 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             t0 = time.perf_counter()
             if students is None:
                 students     = self.dq.get_students(student_id)
+            if l20_interaction is None:
+                l20_interaction  = self.dq.get_l20_interaction(student_id)
             if interactions is None:
                 interactions = self.dq.get_interactions(student_id)
             feed_ids = interactions["post_id"].dropna().unique().tolist()
             if feeds_lookup is None:
                 feeds_lookup = self.dq.get_user_events_json(feed_ids)
-            # print(f"feeds_lookup -> {feeds_lookup}")
+            print(f"l20_interaction -> {l20_interaction}") if self.verbose else None
             download_ms  = (time.perf_counter()-t0)*1000
             print(f"Download time: {(download_ms/1000):.2f}s") if self.verbose else None
             # --------------------------------------------------
@@ -444,6 +447,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # 10. Upload
             # ----------------------------
             print("10 Upload ...") if self.verbose else None
+
             t0 = time.perf_counter()
             metadata = {
                 "student_id"          :student_id, # 
@@ -456,6 +460,8 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "max_output_tokens"   :self.cfg["llm"]["max_output_tokens"], #
                 "feed_text_max_chars" :self.cfg["hyde"]["feed_text_max_chars"], #
                 "temperature"         :self.cfg["llm"]["temperature"], #
+                "tag_interaction"     :l20_interaction['recent_tag_interaction'].iloc[0],
+                "category_interaction":l20_interaction['recent_category_interaction'].iloc[0],
                 "interaction"         :self._interactions_to_json(interactions,student_id)
             }
             self._upload_to_cgs(

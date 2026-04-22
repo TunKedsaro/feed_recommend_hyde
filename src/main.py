@@ -22,7 +22,7 @@ logging.getLogger("google").setLevel(logging.WARNING)
 
 app = FastAPI(
     title="Feed recommentdation HyDE",
-    version="1.1.0",
+    version="1.1.1",
     description=(
         "Feed recommendation HyDE part"
         "<br>"
@@ -138,7 +138,7 @@ def bigquery_health_check():
 ### ----------   Hyde Generator  ---------- ###
 hg = HydeGenerator(
     bucket_name = bucket_name,
-    verbose     = 0
+    verbose     = 1
 )
 ### ----------     API:2.1       ---------- ###
 @app.post(
