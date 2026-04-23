@@ -22,7 +22,7 @@ logging.getLogger("google").setLevel(logging.WARNING)
 
 app = FastAPI(
     title="Feed recommentdation HyDE",
-    version="1.1.1",
+    version="1.1.0",
     description=(
         "Feed recommendation HyDE part"
         "<br>"
