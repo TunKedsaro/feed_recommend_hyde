@@ -47,6 +47,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional, Set
 
 import pandas as pd
+import ast
 
 
 # -----------------------------------------------------------------------------
@@ -58,10 +59,13 @@ EVENT_WEIGHT: Dict[str, float] = {
     "view": 1.0,
     "click": 1.2,
     "like": 1.5,
+    "search": 1.0,
     "share": 1.6,
     "comment": 1.6,
+    "bookmark":2.0
 }
 
+verbose = 0
 
 def _dwell_boost(dwell_ms: int) -> float:
     """
@@ -220,12 +224,9 @@ def _build_recent_feeds_block(
 
     return "\n".join(lines).strip()
 
-
-# -----------------------------------------------------------------------------
-# Public API: summarization
-# -----------------------------------------------------------------------------
 def build_history_summary(
     user_events: pd.DataFrame,
+    l20_interaction: pd.DataFrame,
     preferred_language: str = "th",
     window_days: int = 30,
     top_themes: int = 4,
@@ -234,135 +235,253 @@ def build_history_summary(
     feeds_lookup: Optional[Dict[str, Dict[str, Any]]] = None,
     feed_text_max_chars: int = 240,
 ) -> str:
-    """
-    Build a stable short text summary from interaction events.
+    
+    pd.set_option('display.max_rows', None) if verbose else None
+    pd.set_option('display.max_columns', None) if verbose else None
+    pd.set_option('display.max_colwidth', None) if verbose else None
+    pd.set_option('display.width', None) if verbose else None
+    print(f"user_events : \n{user_events}") if verbose else None
+    print(f"l20_interaction : \n{l20_interaction}") if verbose else None
+    print(f"preferred_language : \n{preferred_language}") if verbose else None
+    print(f"window_days : \n{window_days}") if verbose else None
+    print(f"top_themes : \n{top_themes}") if verbose else None
+    print(f"include_recent_feeds : \n{include_recent_feeds}") if verbose else None
+    print(f"recent_k : \n{recent_k}") if verbose else None
+    print(f"feeds_lookup : \n{feeds_lookup}") if verbose else None
+    print(f"feed_text_max_chars : \n{feed_text_max_chars}") if verbose else None
 
-    Input
-    -----
-    user_events dataframe with (typical) columns:
-      - feed_id (required)
-      - event_type (optional; defaults to "view")
-      - dwell_ms (optional; defaults to 0)
-      - ts (optional; only needed for recency block and windowing)
 
-    Output
-    ------
-    HistorySummaryText in TH/EN.
+    # -----------------------------
+    # Step 1: safe parse
+    # -----------------------------
+    def safe_parse(x):
+        if isinstance(x, list):
+            return x
+        if isinstance(x, str):
+            try:
+                return ast.literal_eval(x)
+            except:
+                return []
+        return []
 
-    Notes
-    -----
-    - This does not currently filter by window_days using ts. The `window_days` is
-      a descriptive label used in the summary header.
-      If you want true windowing here, do it upstream by filtering user_events
-      before calling this function (keeps this module deterministic/simple).
-    - include_recent_feeds requires feeds_lookup and ts.
-    """
-    if user_events is None or len(user_events) == 0:
+    # -----------------------------
+    # Step 2: extract l20 data
+    # -----------------------------
+    if l20_interaction is None or len(l20_interaction) == 0:
         return ""
 
-    df = user_events.copy()
+    row = l20_interaction.iloc[0]
 
-    # Normalize required columns defensively.
-    if "event_type" not in df.columns:
-        df["event_type"] = "view"
-    if "dwell_ms" not in df.columns:
-        df["dwell_ms"] = 0
-    if "feed_id" not in df.columns:
-        return ""
+    posts = safe_parse(row.get("recent_post_interaction"))
+    tags = safe_parse(row.get("recent_tag_interaction"))
+    categories = safe_parse(row.get("recent_category_interaction"))
+    keywords = safe_parse(row.get("recent_keyword_search"))
 
-    df["event_type"] = df["event_type"].astype(str).str.lower().str.strip()
-    df["feed_id"] = df["feed_id"].astype(str).str.strip()
+    # -----------------------------
+    # Step 3: recent feeds (optional)
+    # -----------------------------
+    recent_titles = []
+    if include_recent_feeds and user_events is not None:
+        df = user_events.copy()
+        df["ts"] = pd.to_datetime(df["event_ts"], utc=True, errors="coerce")
+        df = df.sort_values("ts", ascending=False)
 
-    # Score each event deterministically.
-    scores: List[float] = []
-    for _, r in df.iterrows():
-        et = str(r.get("event_type", "view") or "view")
-        base = EVENT_WEIGHT.get(et, 1.0)
-        dwell = _safe_int(r.get("dwell_ms", 0), 0)
-        scores.append(base + _dwell_boost(dwell))
-    df["score"] = scores
+        recent_ids = df["post_id"].dropna().unique()[:recent_k]
 
-    # POC theme inference.
-    df["theme"] = df["feed_id"].apply(_infer_theme_from_feed_id)
+        for fid in recent_ids:
+            meta = feeds_lookup.get(fid, {}) if feeds_lookup else {}
+            title = meta.get("title", fid)
+            recent_titles.append(title)
 
-    # Aggregate by theme; all deterministic aggregations.
-    theme_agg = (
-        df.groupby("theme", dropna=False)
-        .agg(
-            total_events=("theme", "count"),
-            total_score=("score", "sum"),
-            num_views=("event_type", lambda s: int((s == "view").sum())),
-            num_clicks=("event_type", lambda s: int((s == "click").sum())),
-            num_likes=("event_type", lambda s: int((s == "like").sum())),
-            max_dwell=("dwell_ms", lambda s: int(pd.to_numeric(s, errors="coerce").fillna(0).max())),
-        )
-        .reset_index()
-    )
+    # -----------------------------
+    # Step 4: convert to string
+    # -----------------------------
+    posts_str = ", ".join(posts)
+    tags_str = ", ".join(tags)
+    categories_str = ", ".join(categories)
+    keywords_str = ", ".join(keywords)
+    recent_str = ", ".join(recent_titles)
 
-    # Sort by score desc then events desc to keep ordering stable.
-    theme_agg = theme_agg.sort_values(["total_score", "total_events", "theme"], ascending=[False, False, True])
-    top = theme_agg.head(int(max(0, top_themes)))
-    total_events = int(len(df))
-
-    # Identify "weak engagement" themes (heuristic, deterministic).
-    weak_themes: List[str] = []
-    for _, r in theme_agg.iterrows():
-        if int(r["total_events"]) >= 2 and float(r["total_score"]) <= 2.1 and int(r["max_dwell"]) < 8000:
-            weak_themes.append(str(r["theme"]))
-    weak_themes = weak_themes[:2]
-
-    preferred_language = (preferred_language or "th").strip().lower()
-    preferred_language = "en" if preferred_language == "en" else "th"
-
+    # -----------------------------
+    # Step 5: final concat
+    # -----------------------------
     if preferred_language == "en":
-        lines: List[str] = [f"Summary of last {window_days} days (total {total_events} events):"]
-        if not top.empty:
-            lines.append("Highest engagement themes:")
-            for _, r in top.iterrows():
-                lines.append(
-                    f"- {r['theme']}: score={float(r['total_score']):.1f}, events={int(r['total_events'])}, "
-                    f"likes={int(r['num_likes'])}, clicks={int(r['num_clicks'])}, max_dwell_ms={int(r['max_dwell'])}"
-                )
-        if weak_themes:
-            lines.append(f"Lower engagement themes: {', '.join(weak_themes)}")
-
-        if include_recent_feeds and feeds_lookup:
-            block = _build_recent_feeds_block(
-                df_events=df,
-                preferred_language=preferred_language,
-                feeds_lookup=feeds_lookup,
-                recent_k=int(max(0, recent_k)),
-                feed_text_max_chars=int(max(0, feed_text_max_chars)),
-            )
-            if block:
-                lines.append(block)
-
-        return "\n".join(lines).strip()
-
-    # TH default
-    lines = [f"สรุปพฤติกรรม {window_days} วันล่าสุด (รวม {total_events} เหตุการณ์):"]
-    if not top.empty:
-        lines.append("ธีมที่มีการมีส่วนร่วมสูง:")
-        for _, r in top.iterrows():
-            lines.append(
-                f"- {r['theme']}: คะแนน={float(r['total_score']):.1f}, เหตุการณ์={int(r['total_events'])}, "
-                f"ไลก์={int(r['num_likes'])}, คลิก={int(r['num_clicks'])}, dwell สูงสุด={int(r['max_dwell'])}ms"
-            )
-    if weak_themes:
-        lines.append(f"ธีมที่มีการมีส่วนร่วมน้อย: {', '.join(weak_themes)}")
-
-    if include_recent_feeds and feeds_lookup:
-        block = _build_recent_feeds_block(
-            df_events=df,
-            preferred_language=preferred_language,
-            feeds_lookup=feeds_lookup,
-            recent_k=int(max(0, recent_k)),
-            feed_text_max_chars=int(max(0, feed_text_max_chars)),
+        summary = (
+            f"User activity in last {window_days} days. "
+            f"Posts interacted: {posts_str}. "
+            f"Tags: {tags_str}. "
+            f"Categories: {categories_str}. "
+            f"Search keywords: {keywords_str}. "
+            f"Recent feeds: {recent_str}."
         )
-        if block:
-            lines.append(block)
+    else:
+        summary = (
+            f"พฤติกรรมผู้ใช้ในจากการ Interactive 20 ครั้งล่าสุด \n"
+            f"โพสต์ที่เคยดู: {posts_str}. \n"
+            f"แท็กที่สนใจ: {tags_str}. \n"
+            f"หมวดหมู่ที่สนใจ: {categories_str}. \n"
+            f"คำค้นหาที่ใช้ล่าสุด: {keywords_str}. \n"
+            f"โพสต์ล่าสุดที่สนใจ: {recent_str}."
+        )
 
-    return "\n".join(lines).strip()
+    return summary.strip()
+
+# # -----------------------------------------------------------------------------
+# # Public API: summarization
+# # -----------------------------------------------------------------------------
+# def build_history_summary(
+#     user_events: pd.DataFrame,
+#     preferred_language: str = "th",
+#     window_days: int = 30,
+#     top_themes: int = 4,
+#     include_recent_feeds: bool = True,
+#     recent_k: int = 5,
+#     feeds_lookup: Optional[Dict[str, Dict[str, Any]]] = None,
+#     feed_text_max_chars: int = 240,
+# ) -> str:
+#     print(f"Position : history.py/def build_history_summary")
+#     """
+#     Build a stable short text summary from interaction events.
+
+#     Input
+#     -----
+#     user_events dataframe with (typical) columns:
+#       - feed_id (required)
+#       - event_type (optional; defaults to "view")
+#       - dwell_ms (optional; defaults to 0)
+#       - ts (optional; only needed for recency block and windowing)
+
+#     Output
+#     ------
+#     HistorySummaryText in TH/EN.
+
+#     Notes
+#     -----
+#     - This does not currently filter by window_days using ts. The `window_days` is
+#       a descriptive label used in the summary header.
+#       If you want true windowing here, do it upstream by filtering user_events
+#       before calling this function (keeps this module deterministic/simple).
+#     - include_recent_feeds requires feeds_lookup and ts.
+#     """
+#     print(f"user_events : \n{user_events}")
+#     print(f"preferred_language : \n{preferred_language}")
+#     print(f"window_days : \n{window_days}")
+#     print(f"top_themes : \n{top_themes}")
+#     print(f"include_recent_feeds : \n{include_recent_feeds}")
+#     print(f"recent_k : \n{recent_k}")
+#     print(f"feeds_lookup : \n{feeds_lookup}")
+#     print(f"feed_text_max_chars : \n{feed_text_max_chars}")
+
+#     if user_events is None or len(user_events) == 0:
+#         return ""
+
+#     df = user_events.copy()
+
+#     # Normalize required columns defensively.
+#     if "event_type" not in df.columns:
+#         df["event_type"] = "view"
+#     if "dwell_ms" not in df.columns:
+#         df["dwell_ms"] = 0
+#     if "post_id" not in df.columns:
+#         return ""
+
+#     # assign in case of different name
+#     df["event_type"] = df["event_type"].astype(str).str.lower().str.strip()
+#     df["feed_id"] = df["post_id"].astype(str).str.strip()
+
+#     print(f"df2 -> \n{df}")
+
+#     # Score each event deterministically.
+#     scores: List[float] = []
+#     for _, r in df.iterrows():
+#         et = str(r.get("event_type", "view") or "view")
+#         base = EVENT_WEIGHT.get(et, 1.0)
+#         dwell = _safe_int(r.get("dwell_ms", 0), 0)
+#         scores.append(base + _dwell_boost(dwell))
+#         print(f"event type : {et} -> base score : {base}")
+#     df["score"] = scores
+
+#     # POC theme inference.
+#     df["theme"] = df["feed_id"].apply(_infer_theme_from_feed_id)
+
+#     # Aggregate by theme; all deterministic aggregations.
+#     theme_agg = (
+#         df.groupby("theme", dropna=False)
+#         .agg(
+#             total_events=("theme", "count"),
+#             total_score=("score", "sum"),
+#             num_views=("event_type", lambda s: int((s == "view").sum())),
+#             num_clicks=("event_type", lambda s: int((s == "click").sum())),
+#             num_likes=("event_type", lambda s: int((s == "like").sum())),
+#             max_dwell=("dwell_ms", lambda s: int(pd.to_numeric(s, errors="coerce").fillna(0).max())),
+#         )
+#         .reset_index()
+#     )
+
+#     # Sort by score desc then events desc to keep ordering stable.
+#     theme_agg = theme_agg.sort_values(["total_score", "total_events", "theme"], ascending=[False, False, True])
+#     top = theme_agg.head(int(max(0, top_themes)))
+#     total_events = int(len(df))
+
+#     # Identify "weak engagement" themes (heuristic, deterministic).
+#     weak_themes: List[str] = []
+#     for _, r in theme_agg.iterrows():
+#         if int(r["total_events"]) >= 2 and float(r["total_score"]) <= 2.1 and int(r["max_dwell"]) < 8000:
+#             weak_themes.append(str(r["theme"]))
+#     weak_themes = weak_themes[:2]
+
+#     preferred_language = (preferred_language or "th").strip().lower()
+#     preferred_language = "en" if preferred_language == "en" else "th"
+
+#     if preferred_language == "en":
+#         lines: List[str] = [f"Summary of last {window_days} days (total {total_events} events):"]
+#         if not top.empty:
+#             lines.append("Highest engagement themes:")
+#             for _, r in top.iterrows():
+#                 lines.append(
+#                     f"- {r['theme']}: score={float(r['total_score']):.1f}, events={int(r['total_events'])}, "
+#                     f"likes={int(r['num_likes'])}, clicks={int(r['num_clicks'])}, max_dwell_ms={int(r['max_dwell'])}"
+#                 )
+#         if weak_themes:
+#             lines.append(f"Lower engagement themes: {', '.join(weak_themes)}")
+
+#         if include_recent_feeds and feeds_lookup:
+#             block = _build_recent_feeds_block(
+#                 df_events=df,
+#                 preferred_language=preferred_language,
+#                 feeds_lookup=feeds_lookup,
+#                 recent_k=int(max(0, recent_k)),
+#                 feed_text_max_chars=int(max(0, feed_text_max_chars)),
+#             )
+#             if block:
+#                 lines.append(block)
+
+#         return "\n".join(lines).strip()
+
+#     # TH default
+#     lines = [f"สรุปพฤติกรรม {window_days} วันล่าสุด (รวม {total_events} เหตุการณ์):"]
+#     if not top.empty:
+#         lines.append("ธีมที่มีการมีส่วนร่วมสูง:")
+#         for _, r in top.iterrows():
+#             lines.append(
+#                 f"- {r['theme']}: คะแนน={float(r['total_score']):.1f}, เหตุการณ์={int(r['total_events'])}, "
+#                 f"ไลก์={int(r['num_likes'])}, คลิก={int(r['num_clicks'])}, dwell สูงสุด={int(r['max_dwell'])}ms"
+#             )
+#     if weak_themes:
+#         lines.append(f"ธีมที่มีการมีส่วนร่วมน้อย: {', '.join(weak_themes)}")
+
+#     if include_recent_feeds and feeds_lookup:
+#         block = _build_recent_feeds_block(
+#             df_events=df,
+#             preferred_language=preferred_language,
+#             feeds_lookup=feeds_lookup,
+#             recent_k=int(max(0, recent_k)),
+#             feed_text_max_chars=int(max(0, feed_text_max_chars)),
+#         )
+#         if block:
+#             lines.append(block)
+
+#     return "\n".join(lines).strip()
 
 
 # -----------------------------------------------------------------------------

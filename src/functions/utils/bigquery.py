@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 from pathlib import Path
 import pandas as pd
+
+verbose = 0
 class DataQuery:
     def __init__(self, config_path: Path | None = None):
         self.client = bigquery.Client()
@@ -14,8 +16,8 @@ class DataQuery:
         self.tables  = self.config["bigquery"]["tables"]
 
     def get_students(self, student_id: Optional[str] = None):
-        print(f"Position : bigquery.py/class DataQuery/def get_students")
-        print(f"- student_id : {student_id}")
+        print(f"Position : bigquery.py/class DataQuery/def get_students") if verbose else None
+        print(f"- student_id : {student_id}") if verbose else None
         table_id = f"{self.project}.{self.dataset}.{self.tables['students']}"
         if student_id is None:
             query = f"""
@@ -40,14 +42,14 @@ class DataQuery:
             )
             job = self.client.query(query, job_config=job_config)
         df = job.to_dataframe()
-        print(f"student df ->\n{df}")
+        print(f"student df ->\n{df}") if verbose else None
         df = df.rename(columns={"user_id": "student_id"})
         return df
     
     def get_l20_interaction(self,student_id):
-        print(f"Position : bigquery.py/class DataQuery/def get_l20_interaction")
+        print(f"Position : bigquery.py/class DataQuery/def get_l20_interaction") if verbose else None
         table_id = f"{self.project}.{self.dataset}.{self.tables['l20_interaction']}"
-        print(f"table_id : {table_id}")
+        print(f"table_id : {table_id}") if verbose else None
         if student_id is None:
             query = f"""
             SELECT *
@@ -135,7 +137,7 @@ class DataQuery:
     #     return df 
     
     def get_interactions(self, student_id: Optional[str] = None):
-        print(f"Position : hydegenerator.py/class DataQuery/def get_interactions")
+        print(f"Position : bigquery.py/class DataQuery/def get_interactions") if verbose else None
         table_id = f"{self.project}.{self.dataset}.{self.tables['interactions']}"
         query = f"""
         SELECT *
@@ -188,8 +190,8 @@ class DataQuery:
     #         }
     #     return feeds_lookup
     def get_user_events_json(self, feed_ids: Optional[List[str]] = None):
-        print("Position : bigquery.py/class DataQuery/def get_user_events_json")
-        print(f"- feed_ids : {feed_ids}")
+        print("Position : bigquery.py/class DataQuery/def get_user_events_json") if verbose else None
+        print(f"- feed_ids : {feed_ids}") if verbose else None
         table_id = f"{self.project}.{self.dataset}.{self.tables['feeds']}"
         if feed_ids is None or len(feed_ids) == 0:
             query = f"""

@@ -26,7 +26,7 @@ app = FastAPI(
     description=(
         "Feed recommendation HyDE part"
         "<br>"
-        f"Last time Update : 2026-04-14 10:44"
+        f"Last time Update : 2026-04-23 14:54"
         "<br>"
         "Repo : https://github.com/TunKedsaro/feed_recommend_hyde"
     ),
@@ -138,7 +138,7 @@ def bigquery_health_check():
 ### ----------   Hyde Generator  ---------- ###
 hg = HydeGenerator(
     bucket_name = bucket_name,
-    verbose     = 1
+    verbose     = 0
 )
 ### ----------     API:2.1       ---------- ###
 @app.post(

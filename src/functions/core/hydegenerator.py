@@ -105,21 +105,37 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             data = yaml.safe_load(f) or {}
         return data.get("hyde_prompts", {}) or {}
     
-    def _choose_hyde_prompt_key(self,num_events: int, history_threshold: int = 5) -> str:
+    # def _choose_hyde_prompt_key(self,num_events: int, history_threshold: int = 5) -> str:
+    #     """
+    #     Select HyDE prompt variant based on interaction volume.
+
+    #     Rules
+    #     -----
+    #     - num_events >= history_threshold → history-heavy (hyde_b)
+    #     - num_events <= 1               → onboarding / sparse (hyde_c)
+    #     - otherwise                     → mixed (hyde_a)
+    #     """
+    #     if num_events >= history_threshold:
+    #         return "hyde_b"
+    #     if num_events <= 1:
+    #         return "hyde_c"
+    #     return "hyde_a"
+    
+    def _choose_hyde_prompt_key(self, num_interaction:int) -> str:
         """
-        Select HyDE prompt variant based on interaction volume.
+        Select HyDE prompt variant based on interaction with Post
 
         Rules
         -----
-        - num_events >= history_threshold → history-heavy (hyde_b)
-        - num_events <= 1               → onboarding / sparse (hyde_c)
-        - otherwise                     → mixed (hyde_a)
+        - num_interaction < 20  -> hyde that base on profile
+        - num_interaction >= 20 -> hyde that base on interaction
         """
-        if num_events >= history_threshold:
-            return "hyde_b"
-        if num_events <= 1:
-            return "hyde_c"
-        return "hyde_a"
+        print(f"Position : hydegenerator.py/def _choose_hyde_prompt_key") if self.verbose else None
+        print(f"num_interaction : {num_interaction}") if self.verbose else None
+        if num_interaction < 20:
+            return "hyde_profile"
+        else:
+            return "hyde_interaction"
     
     def _render_prompt(
         self,
@@ -128,6 +144,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         user_context_text: str,
         history_summary_text: Optional[str],
     ) -> str:
+        print("Position : hydegenerator.py/def _render_prompt")  if self.verbose else None
         """
         Render a prompt template using strict placeholder substitution.
 
@@ -138,6 +155,10 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
 
         No templating engine is used on purpose to keep behavior explicit.
         """
+        print(f"template : \n{template}") if self.verbose else None
+        print(f"preferred_language : \n{preferred_language}") if self.verbose else None
+        print(f"user_context_text : \n{user_context_text}") if self.verbose else None
+        print(f"history_summary_text : \n{history_summary_text}") if self.verbose else None
         s = template.replace("{{preferred_language}}", preferred_language or "th")
         s = s.replace("{{UserContextText}}", user_context_text or "")
         s = s.replace("{{HistorySummaryText}}", history_summary_text or "")
@@ -292,6 +313,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         t0_total        = time.perf_counter()
         print(f"Position : hydegenerator.py/class HydeGenerator/def single_hyde_generator2") if self.verbose else None
         try:
+            print(f"student_id : {student_id}")
             # --------------------------------------------------
             # 1. Download data
             # --------------------------------------------------
@@ -306,6 +328,8 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             feed_ids = interactions["post_id"].dropna().unique().tolist()
             if feeds_lookup is None:
                 feeds_lookup = self.dq.get_user_events_json(feed_ids)
+
+            print(f"students -> {students}") if self.verbose else None
             print(f"l20_interaction -> {l20_interaction}") if self.verbose else None
             download_ms  = (time.perf_counter()-t0)*1000
             print(f"Download time: {(download_ms/1000):.2f}s") if self.verbose else None
@@ -323,6 +347,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             print("03 Load prompts + client ...") if self.verbose else None
             t0 = time.perf_counter()
             prompts = self._load_prompts()
+            print(f"prompts : {prompts}") if self.verbose else None
             client = build_llm_client_from_yaml(
                 parameters_path = str(PROJECT_ROOT/"parameters"/"parameters.yaml")
             )
@@ -357,6 +382,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             if num_events > 0:
                 history_summary_text = build_history_summary(
                         user_events,
+                        l20_interaction,
                         preferred_language = pref_lang,
                         include_recent_feeds = include_recent_feeds,
                         recent_k = recent_k,
@@ -369,7 +395,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # ----------------------------
             print("06 Prompt ...") if self.verbose else None
             t0 = time.perf_counter()
-            prompt_key = self._choose_hyde_prompt_key(num_events, history_threshold)
+            prompt_key = self._choose_hyde_prompt_key(num_events)
             template = prompts.get(prompt_key)
             if not template:
                 raise ValueError(f"Missing prompt {prompt_key}")
@@ -379,6 +405,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 user_context_text=user_ctx.user_context_text,
                 history_summary_text=history_summary_text,
             )
+            print(f"_render_prompt : {prompt}") if self.verbose else None
             timing["build_prompt_ms"] = round((time.perf_counter() - t0) * 1000, 2)
             # ----------------------------
             # 7. LLM
@@ -460,6 +487,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "max_output_tokens"   :self.cfg["llm"]["max_output_tokens"], #
                 "feed_text_max_chars" :self.cfg["hyde"]["feed_text_max_chars"], #
                 "temperature"         :self.cfg["llm"]["temperature"], #
+                "hyde_template"       :prompt_key,
                 "tag_interaction"     :l20_interaction['recent_tag_interaction'].iloc[0],
                 "category_interaction":l20_interaction['recent_category_interaction'].iloc[0],
                 "interaction"         :self._interactions_to_json(interactions,student_id)
