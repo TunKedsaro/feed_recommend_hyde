@@ -82,7 +82,7 @@ hyde_prompts:
     # 6. HYDE_QUERY_STRUCTURE (EXACTLY 5)
     - Q1: interaction_primary weight=1.0
     - Q2: interaction_secondary (must differ from Q1) weight=1.0
-    - Q3: profile_based (light alignment with UserContext) weight=1.0
+    - Q3: profile_based (light alignment with UserContext) weight=0.8
     - Q4: ai_exploration weight=0.6
     - Q5: ai_exploration (must differ from Q4) weight=0.6
 
@@ -92,7 +92,7 @@ hyde_prompts:
       "hyde_queries": [
         {"query_id":"Q1","query_text":"string","weight":1.0,"intent_label":"interaction_primary"},
         {"query_id":"Q2","query_text":"string","weight":1.0,"intent_label":"interaction_secondary"},
-        {"query_id":"Q3","query_text":"string","weight":1.0,"intent_label":"profile_based"},
+        {"query_id":"Q3","query_text":"string","weight":0.8,"intent_label":"profile_based"},
         {"query_id":"Q4","query_text":"string","weight":0.6,"intent_label":"ai_exploration"},
         {"query_id":"Q5","query_text":"string","weight":0.6,"intent_label":"ai_exploration"}
       ]
