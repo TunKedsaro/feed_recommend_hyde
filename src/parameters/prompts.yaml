@@ -69,7 +69,7 @@ hyde_prompts:
     UserContext:
     {{UserContextText}}
 
-    hyde_ex_profile: |
+  hyde_ex_profile: |
       # 1. ROLE_DEFINITION
       You are a query synthesis engine for a feed recommendation system.
 
