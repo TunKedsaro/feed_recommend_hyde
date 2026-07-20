@@ -7,10 +7,12 @@ import os
 from time import time
 from pathlib import Path
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
+from google.cloud import bigquery
 
+from src.functions.utils.bigquery import get_user_events
 from src.functions.core.hydegenerator import HydeGenerator
 import logging
 
@@ -22,11 +24,11 @@ logging.getLogger("google").setLevel(logging.WARNING)
 
 app = FastAPI(
     title="Feed recommentdation HyDE",
-    version="1.1.0",
+    version="1.2.0",
     description=(
         "Feed recommendation HyDE part"
         "<br>"
-        f"Last time Update : 2026-04-23 14:54"
+        f"Last time Update : 15/07/26 18:28"
         "<br>"
         "Repo : https://github.com/TunKedsaro/feed_recommend_hyde"
     ),
@@ -48,20 +50,22 @@ app.add_middleware(
 config_path = Path(__file__).resolve().parent / "parameters" / "parameters.yaml"
 with open(config_path, "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
-
 bucket_name = config["cloudstorage"]["bucket"]
+
+print(f"config -> {config}")
+print(f"bucket_name -> {bucket_name}")
 
 ### ---------- Health & Metadata ---------- ###
 ### ----------     API:0.0       ---------- ###
-@app.get(
-    "/", 
-    tags=["Health & Metadata"],
-    description="API 0.0 : Service root status check"
-)
-def root_status():
-    return {
-        "response":"ok"
-    }
+# @app.get(
+#     "/", 
+#     tags=["Health & Metadata"],
+#     description="API 0.0 : Service root status check"
+# )
+# def root_status():
+#     return {
+#         "response":"ok"
+#     }
 
 ### ---------- Health & Metadata ---------- ###
 ### ----------     API:1.1       ---------- ###
@@ -104,41 +108,33 @@ def gemini_health_check():
 
 
 ### ----------     API:1.3       ---------- ###
-from google.cloud import bigquery
-def get_user_events(user_id: str):
-    client = bigquery.Client()
-    query = """
-        SELECT *
-        FROM `poc-piloturl-nonprod.gold_layer.students`
-        WHERE student_id = @user_id
-    """
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("user_id", "STRING", user_id)
-        ]
-    )
-    rows = client.query(query, job_config=job_config)
-    return [dict(row) for row in rows]
-
 @app.get(
-    "/health/bigquery", 
+    "/health/bigquery",
     tags=["Health & Metadata"],
-    description="API 1.3 : BigQuery connectivity test query"
+    description="API 1.3: BigQuery connectivity test query",
 )
 def bigquery_health_check():
-    start_time  = time()
+    start_time = time()
+    try:
+        body = get_user_events("U-1001")
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"BigQuery query failed: {error}",
+        ) from error
     finish_time = time()
     process_time = finish_time - start_time
+
     return {
-        "status": "ok", 
-        "body": get_user_events("stu_p001"),
-        "response_time" : f"{process_time:.5f} s"
-        }
+        "status": "ok",
+        "body": body,
+        "response_time": f"{process_time:.5f} s",
+    }
 
 ### ----------   Hyde Generator  ---------- ###
 hg = HydeGenerator(
     bucket_name = bucket_name,
-    verbose     = 0
+    verbose     = 1
 )
 ### ----------     API:2.1       ---------- ###
 @app.post(
@@ -153,15 +149,15 @@ def generate_student_recommendation(student_id):
         "response"  :status
     }
 
-### ----------     API:2.2       ---------- ###
-@app.get(
-    "/hyde/students/sequential", 
-    tags=["Hyde Generator"],
-    description="API 2.2 : Generate HyDE bundle every students in bigquery"
-)
-def sequential_of_single_hyde_generator():
-    report_each_student = hg.sequential_of_single_student_generator()
-    return {
-        "report_each_student":report_each_student
-    }
+# ### ----------     API:2.2       ---------- ###
+# @app.get(
+#     "/hyde/students/sequential", 
+#     tags=["Hyde Generator"],
+#     description="API 2.2 : Generate HyDE bundle every students in bigquery"
+# )
+# def sequential_of_single_hyde_generator():
+#     report_each_student = hg.sequential_of_single_student_generator()
+#     return {
+#         "report_each_student":report_each_student
+#     }
 

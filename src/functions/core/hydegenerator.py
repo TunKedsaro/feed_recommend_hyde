@@ -529,60 +529,60 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             "total_time_sec": total_time
         }
 
-    def sequential_of_single_student_generator(self):
-        """load all data from bigQuery once time then use it for every students"""
-        t0_total  = time.perf_counter()
-        report_each_student = []
-        failed              = []
-        slow                = []
-        timing_rows         = []
+    # def sequential_of_single_student_generator(self):
+    #     """load all data from bigQuery once time then use it for every students"""
+    #     t0_total  = time.perf_counter()
+    #     report_each_student = []
+    #     failed              = []
+    #     slow                = []
+    #     timing_rows         = []
 
-        students     = self.dq.get_students()
-        interactions = self.dq.get_interactions()
-        feeds_lookup = self.dq.get_user_events_json()
+    #     students     = self.dq.get_students()
+    #     interactions = self.dq.get_interactions()
+    #     feeds_lookup = self.dq.get_user_events_json()
         
-        student_ids = students["student_id"].astype(str).unique().tolist()
-        total_students = len(student_ids)
-        students_digit = len(str(total_students))
-        for i, student_id in enumerate(student_ids, start=1):
-            percent = (i / total_students) * 100
-            print(f"\nProcessing {i:0{students_digit}d}/{total_students} ({percent:.2f}%) -> {student_id}")
-            result = self.single_hyde_generator2(
-                student_id,
-                students     = students,
-                interactions = interactions,
-                feeds_lookup = feeds_lookup
-            )
-            report_each_student.append(result)
-            timing_rows.append(result.get("timing", {}))
-            if result["status"] != "Complete":
-                failed.append(result)
-            slow.extend(result.get("slow", []))
+    #     student_ids = students["student_id"].astype(str).unique().tolist()
+    #     total_students = len(student_ids)
+    #     students_digit = len(str(total_students))
+    #     for i, student_id in enumerate(student_ids, start=1):
+    #         percent = (i / total_students) * 100
+    #         print(f"\nProcessing {i:0{students_digit}d}/{total_students} ({percent:.2f}%) -> {student_id}")
+    #         result = self.single_hyde_generator2(
+    #             student_id,
+    #             students     = students,
+    #             interactions = interactions,
+    #             feeds_lookup = feeds_lookup
+    #         )
+    #         report_each_student.append(result)
+    #         timing_rows.append(result.get("timing", {}))
+    #         if result["status"] != "Complete":
+    #             failed.append(result)
+    #         slow.extend(result.get("slow", []))
 
-        # --------------------------------------------------
-        # Upload report
-        # --------------------------------------------------
-        thai_tz = timezone(timedelta(hours=7))
-        timestamp = datetime.now(thai_tz).strftime("%y%m%d_%H%M")
-        self.cgs.create_folder(f"report_{timestamp}/")
-        total_time = round(time.perf_counter() - t0_total, 2)
-        report = {
-            "run_metadata": {
-                "generated_at": datetime.now(thai_tz).isoformat(),
-                "total_students": len(student_ids),
-                "updated_count": len(student_ids) - len(failed),
-                "failed_count": len(failed),
-                "slow_count": len(slow),
-                "total_time_sec": total_time
-            },
-            "students": timing_rows,
-            "failed": failed,
-            "slow": slow
-        }
-        json_path = f"hyde_report_{timestamp}.json"
-        self.cgs.upload_json(
-            blob_path=f"report_{timestamp}/{json_path}",
-            json_data=report
-        )
-        print(f"Report uploaded → report_{timestamp}/{json_path}")
-        return report
+    #     # --------------------------------------------------
+    #     # Upload report
+    #     # --------------------------------------------------
+    #     thai_tz = timezone(timedelta(hours=7))
+    #     timestamp = datetime.now(thai_tz).strftime("%y%m%d_%H%M")
+    #     self.cgs.create_folder(f"report_{timestamp}/")
+    #     total_time = round(time.perf_counter() - t0_total, 2)
+    #     report = {
+    #         "run_metadata": {
+    #             "generated_at": datetime.now(thai_tz).isoformat(),
+    #             "total_students": len(student_ids),
+    #             "updated_count": len(student_ids) - len(failed),
+    #             "failed_count": len(failed),
+    #             "slow_count": len(slow),
+    #             "total_time_sec": total_time
+    #         },
+    #         "students": timing_rows,
+    #         "failed": failed,
+    #         "slow": slow
+    #     }
+    #     json_path = f"hyde_report_{timestamp}.json"
+    #     self.cgs.upload_json(
+    #         blob_path=f"report_{timestamp}/{json_path}",
+    #         json_data=report
+    #     )
+    #     print(f"Report uploaded → report_{timestamp}/{json_path}")
+    #     return report
