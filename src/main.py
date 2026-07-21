@@ -28,14 +28,13 @@ app = FastAPI(
     description=(
         "Feed recommendation HyDE part"
         "<br>"
-        f"Last time Update : 15/07/26 18:28"
+        f"Last time Update : 21/07/26 11:08"
         "<br>"
         "Repo : https://github.com/TunKedsaro/feed_recommend_hyde"
     ),
     contact={
         "name": "Tun Kedsaro",
         "email": "tun.k@terradigitalventures.com",
-        
     },
 )
 
