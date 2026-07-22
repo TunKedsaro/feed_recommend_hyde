@@ -27,5 +27,19 @@ bigquery:
     feeds: silver_feed_community
     l20_interaction: gold_agg_l20_user_interaction
 
+silverbigquery:
+  project: poc-piloturl-nonprod
+  dataset: silver_layer_dh7x
+  tables:
+    students: user
+    interactions: user_post_interaction
+    feeds: post_community
+
+goldbigquery:
+  project: poc-piloturl-nonprod
+  dataset: gold_layer_dh7x
+  tables:
+    l20_interaction: latest_20_user_post_interaction
+
 cloudstorage:
   bucket: hyde-datalake-feed-recommend

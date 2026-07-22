@@ -53,7 +53,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from src.functions.utils.logging import get_logger
+from src.functions.utils.logger import get_logger
 from src.functions.utils.cost_logger import append_cost_log
 
 logger = get_logger(__name__)

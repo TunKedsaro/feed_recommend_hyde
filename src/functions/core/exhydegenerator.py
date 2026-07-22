@@ -15,7 +15,7 @@ from collections import defaultdict
 from google.cloud import bigquery
 from google.cloud import storage
 
-from src.functions.utils.logging import get_logger
+from src.functions.utils.logger import get_logger
 from src.functions.utils.config  import PROJECT_ROOT, load_config
 from src.functions.utils.llm_client import build_llm_client_from_yaml
 from src.functions.utils.text_embeddings import GoogleEmbeddingModel
