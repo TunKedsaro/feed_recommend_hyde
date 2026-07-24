@@ -414,13 +414,11 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
 
             t0 = time.perf_counter()
             user_ctx = build_user_context(student_row)
-            print("x"*100)
-
             pref_lang = user_ctx.user_context_json.get("preferred_language", "th")
             # pref_lang = "th"  # TODO : change it later but for now there are only th feeds
-            user_events = interactions[interactions["user_id"] == profile_id]
-            print("user_events -> \n{user_events}")
+            user_events = interactions[interactions["profile_id"] == profile_id]
             num_events  = len(user_events)
+            print(f"num_events : {num_events}")
             history_summary_text = ""
             if num_events > 0:
                 history_summary_text = build_history_summary(
@@ -458,7 +456,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             hyde_json = client.generate_json(
                 prompt,
                 extra_log={
-                    "student_id": student_id,
+                    "student_id": profile_id,
                     "pipeline": "hyde_generator",
                 },
             )
@@ -468,7 +466,8 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             slow_time = self.cfg["llm"]["slow_time"]
             if llm_time > slow_time:
                 print(f"⚠ Slow LLM ({llm_time:.2f}s)")
-                slow_students.append(student_id)
+                slow_students.append(profile_id)
+
             # ----------------------------
             # 8. Extract queries
             # ----------------------------       
@@ -505,7 +504,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             append_cost_log(
                 {
                     "event_type": "embedding",
-                    "student_id": student_id,
+                    "student_id": profile_id,
                     "model_name": embedding_model,
                     "num_texts": len(hyde_query_text),
                     "total_chars": sum(len(t or "") for t in hyde_query_text),
@@ -513,18 +512,28 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                     "estimated_cost_usd": embedding_cost_usd,
                 }
             )
+
             # ----------------------------
             # 10. Upload
             # ----------------------------
-            print("10 Upload ...") if self.verbose else None
+            print(f"l20_interaction -> \n{type(l20_interaction)}")
+            print(f"l20_interaction -> \n{l20_interaction}")
+            l20_interaction_recent_post_interaction = l20_interaction["recent_post_interaction"]
 
+            print("xax"*100)
+            print(f"l20_interaction_recent_post_interaction -> \n{l20_interaction_recent_post_interaction}")
+            print(0/0)
+
+
+            print("10 Upload ...") if self.verbose else None
+            print(f"student_row -> \n{student_row}")
             t0 = time.perf_counter()
             metadata = {
-                "student_id"          :student_id, # 
-                "current_status"      :student_row['curriculum_name'], #
-                "education_level"     :student_row['student_year'], #
-                "education_major"     :student_row['faculty_name'], #
-                "target_roles"        :student_row['onboard_grp'], #
+                "student_id"          :profile_id, # 
+                "current_status"      :student_row['user_type'], #
+                "education_level"     :student_row['current_student_year_bin'], #
+                "education_major"     :student_row['current_university'], #
+                "target_roles"        :None, # #TODO: รอมาใส่ target_role ตอนหลัง
                 "timezone"            :self.cfg["app"]["timezone"], #
                 "model_name"          :self.cfg["llm"]["model_name"], #
                 "max_output_tokens"   :self.cfg["llm"]["max_output_tokens"], #
@@ -533,7 +542,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "hyde_template"       :prompt_key,
                 "tag_interaction"     :l20_interaction['recent_tag_interaction'].iloc[0],
                 "category_interaction":l20_interaction['recent_category_interaction'].iloc[0],
-                "interaction"         :self._interactions_to_json(interactions,student_id)
+                "interaction"         :self._interactions_to_json(interactions,profile_id)
             }
             self._upload_to_cgs(
                 student_id = profile_id,

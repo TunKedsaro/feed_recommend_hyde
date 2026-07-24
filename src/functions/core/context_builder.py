@@ -100,12 +100,18 @@ def build_user_context(student_row: Dict[str, Any]) -> UserContextArtifacts:
     # ------------------------------------------------------------------
     # Optional profile fields
     # ------------------------------------------------------------------
+    # TODO: หา target_role ของแต่ละ user
     target_roles_raw = (student_row.get("target_roles") or "").strip()
-    skills_raw = (student_row.get("skill") or "").strip()
+    # TODO: กลับมาตรวจเช็คอีกทีตอนที่มีข้อมูล skill_json เข้ามาใน BigQuery แล้ว | ต้องไปดู user.skill_json กับ goldUser_skill_onehot
+    skills_raw = (student_row.get("skills_json") or "").strip()
+    print(f"skills_raw : {skills_raw}")
+    # TODO: หาไม่เจอ
     interests_raw = (student_row.get("interests") or "").strip()
+    # TODO: กลับมาตรวจเช็คอีกทีตอนที่มีข้อมูล onboard_group เข้ามาใน BigQuery แล้ว
+    onboard_grp = student_row.get("onboard_group") or ""
+    # TODO: กลับมาตรวจเช็คอีกทีตอนที่มีข้อมูล onboard_group_desc เข้ามาใน BigQuery แล้ว
+    onboard_desc = student_row.get("onboard_group_desc") or ""
 
-    onboard_grp = student_row.get("onboard_grp") or "NA"
-    onboard_desc = student_row.get("onboard_grp_description") or ""
 
     # ------------------------------------------------------------------
     # Structured JSON (stable, sanitized)
@@ -138,6 +144,7 @@ def build_user_context(student_row: Dict[str, Any]) -> UserContextArtifacts:
         "onboard_grp": onboard_grp,
         "onboard_grp_description": onboard_desc,
     }
+    print(f"user_context_json -> \n{user_context_json}")
 
     # ------------------------------------------------------------------
     # Text summary (compact, HyDE-friendly)
@@ -151,7 +158,7 @@ def build_user_context(student_row: Dict[str, Any]) -> UserContextArtifacts:
             f"นักศึกษา: {edu_major}\n"
             f"เป้าหมายอาชีพ: {roles_text}\n"
             f"ทักษะ: {skills_text}\n"
-            # f"ความสนใจ: {interests_text}\n"
+            f"ความสนใจ: {interests_text}\n"
             f"กลุ่มผู้ใช้: {onboard_grp} ({onboard_desc})\n"
             f"ภาษา: ไทย"
         )
@@ -160,10 +167,11 @@ def build_user_context(student_row: Dict[str, Any]) -> UserContextArtifacts:
             f"Student major: {edu_major}.\n"
             f"Target roles: {roles_text}.\n"
             f"Skills: {skills_text}.\n"
-            # f"Interests: {interests_text}.\n"
+            f"Interests: {interests_text}.\n"
             f"Onboard group: {onboard_grp} ({onboard_desc}).\n"
             f"Language: English."
         )
+    print(f"user_context_text -> \n{user_context_text}")
 
     return UserContextArtifacts(
         user_context_json=user_context_json,
