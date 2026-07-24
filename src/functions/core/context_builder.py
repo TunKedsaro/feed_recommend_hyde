@@ -79,11 +79,24 @@ def build_user_context(student_row: Dict[str, Any]) -> UserContextArtifacts:
     preferred_language = (student_row.get("preferred_language") or "th").strip()
     preferred_language = preferred_language if preferred_language in ("th", "en") else "th"
 
-    current_status = student_row.get("current_status") or "unknown"
-    edu_level      = student_row.get("student_year") or "unknown"
-    edu_major      = student_row.get("faculty_name")+" "+student_row.get("curriculum_name")+" "+student_row.get("university_name") or ""
-    print("xxx")
+    # dev branch | Mock data
+    # current_status = student_row.get("current_status") or "unknown" # dev branch
+    # edu_level      = student_row.get("student_year") or "unknown"   # dev branch
+    # edu_major      = student_row.get("faculty_name")+" "+student_row.get("curriculum_name")+" "+student_row.get("university_name") or ""  # dev branch
 
+    # feature branch | Prod data
+    current_status = student_row.get("user_type") or "unknown"
+    edu_level      = student_row.get("current_student_year_bin") or "unknown"
+
+    current_faculty = student_row.get("current_faculty")[0]
+    current_curriculum = student_row.get("current_major")[0]
+    current_university = student_row.get("current_university")[0]
+
+    edu_major      = f"{current_faculty} {current_curriculum} {current_university}" or ""
+
+    print(f"current_status -> {current_status}")
+    print(f"edu_level      -> {edu_level}")
+    print(f"edu_major      -> {edu_major}")
     # ------------------------------------------------------------------
     # Optional profile fields
     # ------------------------------------------------------------------

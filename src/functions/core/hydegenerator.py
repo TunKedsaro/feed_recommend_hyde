@@ -393,8 +393,26 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # 5. Context
             # ----------------------------
             print("05 Context ...") if self.verbose else None
-            t0 = time.perf_counter()
+            # TODO: refactor code later
+            # Turn string dictionary -> diction 
+            def parse_student_row(student_row: dict) -> dict:
+                parsed = {}
 
+                for key, value in student_row.items():
+                    if isinstance(value, str):
+                        try:
+                            # Try to parse JSON strings
+                            parsed[key] = json.loads(value)
+                        except (json.JSONDecodeError, TypeError):
+                            # Keep original string if it's not valid JSON
+                            parsed[key] = value
+                    else:
+                        parsed[key] = value
+
+                return parsed
+            student_row = parse_student_row(student_row)
+
+            t0 = time.perf_counter()
             user_ctx = build_user_context(student_row)
             print("x"*100)
 
