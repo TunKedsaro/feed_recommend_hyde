@@ -516,17 +516,10 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # ----------------------------
             # 10. Upload
             # ----------------------------
-            print(f"l20_interaction -> \n{type(l20_interaction)}")
-            print(f"l20_interaction -> \n{l20_interaction}")
-            l20_interaction_recent_post_interaction = l20_interaction["recent_post_interaction"]
-
-            print("xax"*100)
-            print(f"l20_interaction_recent_post_interaction -> \n{l20_interaction_recent_post_interaction}")
-            print(0/0)
-
+            l20_interaction_recent_post_interaction     = l20_interaction["recent_post_interaction"]
+            l20_interaction_recent_category_interaction = l20_interaction["recent_category_interaction"]
 
             print("10 Upload ...") if self.verbose else None
-            print(f"student_row -> \n{student_row}")
             t0 = time.perf_counter()
             metadata = {
                 "student_id"          :profile_id, # 
@@ -540,10 +533,12 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "feed_text_max_chars" :self.cfg["hyde"]["feed_text_max_chars"], #
                 "temperature"         :self.cfg["llm"]["temperature"], #
                 "hyde_template"       :prompt_key,
-                "tag_interaction"     :l20_interaction['recent_tag_interaction'].iloc[0],
-                "category_interaction":l20_interaction['recent_category_interaction'].iloc[0],
+                "tag_interaction"     :l20_interaction_recent_post_interaction,
+                "category_interaction":l20_interaction_recent_category_interaction,
                 "interaction"         :self._interactions_to_json(interactions,profile_id)
             }
+            print(f"self._interactions_to_json(interactions,profile_id) -> {self._interactions_to_json(interactions,profile_id)}")
+            print("xyz"*100)
             self._upload_to_cgs(
                 student_id = profile_id,
                 metadata   = metadata,
