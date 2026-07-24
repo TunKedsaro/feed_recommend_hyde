@@ -22,8 +22,9 @@ Design principles
 
 from dataclasses import dataclass
 from typing import Any, Dict
+import json
 
-verbose = 0
+verbose = 1
 # -----------------------------------------------------------------------------
 # Data container
 # -----------------------------------------------------------------------------
@@ -68,19 +69,20 @@ def build_user_context(student_row: Dict[str, Any]) -> UserContextArtifacts:
     - Do not add inferred fields or heuristics here.
     - Any enrichment belongs in later pipeline stages.
     """
-    print(f"student_row: {student_row}") if verbose else None
+    print(f"student_row: {json.dumps(student_row, indent=4, ensure_ascii=False, default=str)}") if verbose else None
 
     # ------------------------------------------------------------------
     # Required / basic fields
     # ------------------------------------------------------------------
-    student_id = student_row["student_id"]
+    student_id = student_row["profile_id"]
 
     preferred_language = (student_row.get("preferred_language") or "th").strip()
     preferred_language = preferred_language if preferred_language in ("th", "en") else "th"
 
     current_status = student_row.get("current_status") or "unknown"
-    edu_level = student_row.get("student_year") or "unknown"
-    edu_major = student_row.get("faculty_name")+" "+student_row.get("curriculum_name")+" "+student_row.get("university_name") or ""
+    edu_level      = student_row.get("student_year") or "unknown"
+    edu_major      = student_row.get("faculty_name")+" "+student_row.get("curriculum_name")+" "+student_row.get("university_name") or ""
+    print("xxx")
 
     # ------------------------------------------------------------------
     # Optional profile fields

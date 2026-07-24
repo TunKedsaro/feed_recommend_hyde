@@ -138,14 +138,14 @@ hg = HydeGenerator(
 )
 ### ----------     API:2.1       ---------- ###
 @app.post(
-    "/hyde/students/{student_id}", 
+    "/hyde/students/{profile_id}", 
     tags=["Hyde Generator"],
     description="API 2.1 : Generate HyDE bundle for a single student"
 )
-def generate_student_recommendation(student_id):
-    status = hg.single_hyde_generator2(student_id=student_id)
+def generate_student_recommendation(profile_id):
+    status = hg.single_hyde_generator2(profile_id=profile_id)
     return {
-        "student_id":student_id,
+        "student_id":profile_id,
         "response"  :status
     }
 

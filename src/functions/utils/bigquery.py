@@ -103,7 +103,7 @@ class SilverGoldDataQuery:
         df = job.to_dataframe()
         if profile_id is not None and not df.empty:
             df["profile_id"] = profile_id
-        print(f"student df ->\n{df}") if verbose else None
+        # print(f"student df ->\n{df}") if verbose else None
         return df
 
     def get_interactions(self, profile_id: Optional[str] = None) -> pd.DataFrame:
@@ -148,7 +148,7 @@ class SilverGoldDataQuery:
                 job_config=job_config,
             )
         df = job.to_dataframe()
-        print(f"student df ->\n{df}") if verbose else None
+        # print(f"student df ->\n{df}") if verbose else None
         return df
     
     def get_l20_interaction(self,profile_id: Optional[str] = None) -> pd.DataFrame:
@@ -190,7 +190,7 @@ class SilverGoldDataQuery:
             )
             job = self.client.query(query,job_config=job_config)
         df = job.to_dataframe()
-        print(f"student df ->\n{df}") if verbose else None
+        # print(f"student df ->\n{df}") if verbose else None
         return df
     
 
@@ -414,15 +414,15 @@ class DataQuery:
 
 
 
-dq = DataQuery()
+# dq = DataQuery()
 # dq.get_students("stu_p4198") 
 # print("#"*100)
 # dq.get_l20_interaction("stu_p4198")
 # print("#"*100)
 # dq.get_interactions("stu_p4198")
 # print("#"*100)
-dq.get_user_events_json("FEED-229")
-print("#"*100)
+# dq.get_user_events_json("FEED-229")
+# print("#"*100)
 
 def get_user_events(user_id: str) -> list[dict]:
     client = bigquery.Client()

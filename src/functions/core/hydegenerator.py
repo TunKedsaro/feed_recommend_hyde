@@ -16,7 +16,7 @@ from src.functions.core.context_builder import build_user_context
 from src.functions.core.history import build_history_summary
 
 from src.functions.utils.cloudstorage import GoogleCloudStorage
-from src.functions.utils.bigquery import DataQuery
+from src.functions.utils.bigquery import DataQuery, SilverGoldDataQuery
 from src.functions.utils.shin_embedder import embed_texts_gemini
 from src.functions.utils.cost_logger import append_cost_log
 
@@ -44,7 +44,7 @@ def prettyjson(txt:str) -> str:
 class HydeGenerator(GoogleCloudStorage,DataQuery):
     def __init__(self,bucket_name:str, verbose:int=0):
         self.cgs     = GoogleCloudStorage(bucket_name=bucket_name)
-        self.dq      = DataQuery()
+        self.dq      = SilverGoldDataQuery()
         self.cfg     = load_config()
         self.verbose = verbose
     
@@ -301,7 +301,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         return (total_chars / 1000) * model_price["per_1k_chars"]
 
     def single_hyde_generator2(self, 
-                                student_id:str,
+                                profile_id:str,
                                 students = None,
                                 l20_interaction = None,
                                 interactions = None,
@@ -313,24 +313,40 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         t0_total        = time.perf_counter()
         print(f"Position : hydegenerator.py/class HydeGenerator/def single_hyde_generator2") if self.verbose else None
         try:
-            print(f"student_id : {student_id}")
+            print(f"profile_id : {profile_id}")
             # --------------------------------------------------
             # 1. Download data
             # --------------------------------------------------
             print("01 Download data ...") if self.verbose else None
             t0 = time.perf_counter()
             if students is None:
-                students     = self.dq.get_students(student_id)
-            if l20_interaction is None:
-                l20_interaction  = self.dq.get_l20_interaction(student_id)
-            if interactions is None:
-                interactions = self.dq.get_interactions(student_id)
-            feed_ids = interactions["post_id"].dropna().unique().tolist()
-            if feeds_lookup is None:
-                feeds_lookup = self.dq.get_user_events_json(feed_ids)
-
+                students     = self.dq.get_user(profile_id)
             print(f"students -> {students}") if self.verbose else None
+            print("#"*100)
+
+            if l20_interaction is None:
+                l20_interaction  = self.dq.get_l20_interaction(profile_id)
             print(f"l20_interaction -> {l20_interaction}") if self.verbose else None
+            print("#"*100)
+
+            if interactions is None:
+                interactions = self.dq.get_interactions(profile_id)
+            print(f"interactions -> \n{interactions}") if self.verbose else None
+            print("#"*100)
+
+            if "post_id" in interactions.columns:
+                post_ids = interactions["post_id"].dropna().unique().tolist()
+            else:
+                post_ids = []
+                print(f"Available columns: {interactions.columns.tolist()}")
+
+            print(f"post_ids -> {post_ids}")
+            print("#"*100)
+
+            # TODO: Clean this part later I don'k know what is purpose for this line
+            # if feeds_lookup is None:
+            #     feeds_lookup = self.dq.get_user_events_json(post_ids)
+            # print("x4")
             download_ms  = (time.perf_counter()-t0)*1000
             print(f"Download time: {(download_ms/1000):.2f}s") if self.verbose else None
             # --------------------------------------------------
@@ -347,7 +363,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             print("03 Load prompts + client ...") if self.verbose else None
             t0 = time.perf_counter()
             prompts = self._load_prompts()
-            print(f"prompts : {prompts}") if self.verbose else None
+            print(f"prompts -> \n{prompts}") if self.verbose else None
             client = build_llm_client_from_yaml(
                 parameters_path = str(PROJECT_ROOT/"parameters"/"parameters.yaml")
             )
@@ -356,14 +372,19 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # 4. Locate student
             # --------------------------------------------------
             print("04 Locate student ...") if self.verbose else None
-            student_row_df = students[students["student_id"] == student_id]
+            pd.set_option("display.max_columns", None)
+            pd.set_option("display.max_colwidth", None)   # Don't truncate long strings
+            pd.set_option("display.width", None)          # Auto-detect terminal width
+            pd.set_option("display.expand_frame_repr", False)
+            print(f"student -> \n {students}")
+            student_row_df = students[students["profile_id"] == profile_id]
             if len(student_row_df) == 0:
-                raise ValueError(f"{student_id} not found")
+                raise ValueError(f"{profile_id} not found")
             student_row = student_row_df.iloc[0].to_dict()
-            # print(f"\nProcessing {student_id}")
+            print(f"\nProcessing {profile_id}")
             t0_student = time.perf_counter()
             timing = {
-                "student_id" : student_id,
+                "student_id" : profile_id,
                 "download_data_ms" : round(download_ms,2),
                 "read_config_ms" : round(read_config_ms,2),
                 "load_prompt_and_client_ms" : round(load_prompt_client_ms,2)
@@ -373,10 +394,14 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # ----------------------------
             print("05 Context ...") if self.verbose else None
             t0 = time.perf_counter()
+
             user_ctx = build_user_context(student_row)
+            print("x"*100)
+
             pref_lang = user_ctx.user_context_json.get("preferred_language", "th")
             # pref_lang = "th"  # TODO : change it later but for now there are only th feeds
-            user_events = interactions[interactions["user_id"] == student_id]
+            user_events = interactions[interactions["user_id"] == profile_id]
+            print("user_events -> \n{user_events}")
             num_events  = len(user_events)
             history_summary_text = ""
             if num_events > 0:
@@ -493,7 +518,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "interaction"         :self._interactions_to_json(interactions,student_id)
             }
             self._upload_to_cgs(
-                student_id = student_id,
+                student_id = profile_id,
                 metadata   = metadata,
                 embedding  = emb,
                 hyde_json  = {
@@ -503,16 +528,16 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             timing["upload_gcs_ms"] = round((time.perf_counter() - t0)*1000,2)
             timing["total_ms"]      = round((time.perf_counter() - t0_student)*1000,2)
             timing["status"]        = "done"
-            print(f"✓ Done {student_id} in {(time.perf_counter()-t0_student):.2f}s")
+            print(f"✓ Done {profile_id} in {(time.perf_counter()-t0_student):.2f}s")
         except Exception as e:
-            print(f"✕ Failed {student_id} → {str(e)}")
+            print(f"✕ Failed {profile_id} → {str(e)}")
             status = "Fail"
             failed_students.append({
-                "student_id":student_id,
+                "profile_id":profile_id,
                 "error":str(e)
             })
             timing = {
-            "student_id": student_id,
+            "profile_id": profile_id,
             "status": str(e)
         }
 
@@ -521,7 +546,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         # --------------------------------------------------
         total_time = round(time.perf_counter() - t0_total, 2)
         return {
-            "student_id": student_id,
+            "student_id": profile_id,
             "status": status,
             "timing": timing,
             "failed": failed_students,
