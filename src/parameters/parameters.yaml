@@ -1,9 +1,8 @@
 app:
-  name: poc_hyde_feed_recommendation
+  name: feed_recommendation_hyde
   timezone: UTC
 
 llm:
-  # model_name: gemini-2.5-flash
   model_name: gemini-3.1-flash-lite-preview
   embedding_model : gemini-embedding-001
   max_output_tokens: 2048
@@ -42,4 +41,5 @@ goldbigquery:
     l20_interaction: latest_20_user_post_interaction
 
 cloudstorage:
-  bucket: hyde-datalake-feed-recommend
+  # bucket: hyde-datalake-feed-recommend
+  bucket: terra-dh7x-ai-poc-gcs-embed

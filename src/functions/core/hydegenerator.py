@@ -256,6 +256,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
         hyde_json : Dict[str, Any]
             HyDE generator output containing synthetic queries under key "hq".
         """
+
         emb_list = embedding.tolist()
         bundle = {
             "student_id": student_id,
@@ -269,7 +270,7 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "embedding05": emb_list[4],
             }
         }
-        # print(bundle)
+        print(f"bundle -> \n{bundle}")
         self.cgs.upload_json(
             blob_path=f"{student_id}/hyde_bundle.json",
             json_data=bundle
@@ -516,8 +517,9 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
             # ----------------------------
             # 10. Upload
             # ----------------------------
-            l20_interaction_recent_post_interaction     = l20_interaction["recent_post_interaction"]
-            l20_interaction_recent_category_interaction = l20_interaction["recent_category_interaction"]
+            row = l20_interaction.iloc[0]
+            l20_interaction_recent_post_interaction = row["recent_post_interaction"]
+            l20_interaction_recent_category_interaction = row["recent_category_interaction"]
 
             print("10 Upload ...") if self.verbose else None
             t0 = time.perf_counter()
@@ -535,10 +537,9 @@ class HydeGenerator(GoogleCloudStorage,DataQuery):
                 "hyde_template"       :prompt_key,
                 "tag_interaction"     :l20_interaction_recent_post_interaction,
                 "category_interaction":l20_interaction_recent_category_interaction,
-                "interaction"         :self._interactions_to_json(interactions,profile_id)
+                "interaction"         :self._interactions_to_json(interactions,profile_id) # TODO: เป็นการระบุ interaction with post_id แต่ลืมไปแล้วว่าจะต้องเอาไปใช้ตรงไหน
             }
             print(f"self._interactions_to_json(interactions,profile_id) -> {self._interactions_to_json(interactions,profile_id)}")
-            print("xyz"*100)
             self._upload_to_cgs(
                 student_id = profile_id,
                 metadata   = metadata,
